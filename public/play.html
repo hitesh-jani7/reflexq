@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#46178f">
+<title>ReflexQ – Join</title>
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="/common.css">
+<style>
+  body { min-height: 100%; height: 100dvh; overflow: hidden; color: #fff; }
+  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; }
+  .center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; gap: 14px; }
+  .bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: rgba(0,0,0,.18); font-weight: 800; font-size: 15px; gap: 10px; }
+  .bar .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar .pts { background: #fff; color: var(--ink); padding: 4px 10px; border-radius: 4px; white-space: nowrap; }
+  form.card { width: min(380px, 100%); display: grid; gap: 12px; color: var(--ink); }
+  form input { width: 100%; padding: 14px; border: 2px solid #ccc; border-radius: 6px; font-size: 18px; font-weight: 700; text-align: center; }
+  form input:focus { outline: none; border-color: var(--purple-light); }
+  form .btn { width: 100%; font-size: 20px; padding: 14px; }
+  .err { color: var(--bad); font-weight: 700; font-size: 15px; min-height: 1em; }
+  h1 { margin: 0; font-size: 30px; font-weight: 900; }
+  .big { font-size: 26px; font-weight: 900; }
+  .soft { opacity: .85; font-weight: 600; }
+  .spinner { width: 54px; height: 54px; border: 6px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #qScreen { background: var(--paper); color: var(--ink); }
+  #qScreen .bar { background: #fff; color: var(--ink); box-shadow: 0 2px 0 rgba(0,0,0,.08); }
+  .qtxt { padding: 12px 16px 0; font-weight: 800; font-size: 17px; text-align: center; }
+  .answers { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; }
+  .answers.two { grid-template-columns: 1fr; }
+  .answers.text { grid-template-columns: 1fr; }
+  .ans { border: 0; border-radius: 6px; color: #fff; display: flex; align-items: center; justify-content: center; gap: 14px; font-size: 18px; font-weight: 800; padding: 10px 16px; box-shadow: var(--shadow); text-align: left; }
+  .ans .shape { font-size: 56px; }
+  .answers.text .ans { justify-content: flex-start; }
+  .answers.text .ans .shape { font-size: 34px; }
+  .ans:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.25); }
+  .ans:disabled { opacity: .35; }
+  .tleft { min-width: 44px; text-align: center; background: var(--purple); color: #fff; padding: 4px 8px; border-radius: 4px; }
+
+  #resScreen.ok { background: var(--ok); }
+  #resScreen.bad { background: var(--bad); }
+  #resScreen.none { background: #555; }
+  .resIcon { width: 110px; height: 110px; border-radius: 50%; border: 6px solid #fff; display: grid; place-items: center; font-size: 64px; font-weight: 900; }
+  .ptsBox { background: rgba(0,0,0,.25); padding: 10px 24px; border-radius: 6px; font-size: 26px; font-weight: 900; }
+  .rankTxt { font-size: 20px; font-weight: 800; }
+  .chosen { width: 120px; height: 120px; border-radius: 10px; display: grid; place-items: center; box-shadow: var(--shadow); }
+  .chosen .shape { font-size: 70px; }
+  .rankBig { font-size: 76px; font-weight: 900; line-height: 1; }
+  .offline { position: fixed; top: 0; left: 0; right: 0; background: var(--red); color: #fff; text-align: center; padding: 6px; font-weight: 800; z-index: 50; font-size: 14px; }
+</style>
+</head>
+<body class="bg-pattern">
+<div id="offline" class="offline hidden">Connection lost – reconnecting…</div>
+
+<section id="joinScreen" class="screen bg-pattern">
+  <div class="center">
+    <span class="logo" style="font-size:34px"><img src="/icon-192.png" alt="" style="width:52px;height:52px">ReflexQ</span>
+    <form class="card" id="joinForm" autocomplete="on">
+      <input id="pinIn" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="Game PIN" autocomplete="off">
+      <input id="nameIn" maxlength="40" placeholder="Your name" autocomplete="name">
+      <input id="rollIn" maxlength="30" placeholder="Roll number" autocomplete="off" style="text-transform:uppercase">
+      <div class="err" id="joinErr"></div>
+      <button class="btn dark" id="joinBtn" type="submit">Enter</button>
+    </form>
+  </div>
+</section>
+
+<section id="waitScreen" class="screen bg-pattern hidden">
+  <div class="bar"><span class="nm" id="wName"></span><span class="pts" id="wScore">0</span></div>
+  <div class="center">
+    <h1 id="wTitle">You're in!</h1>
+    <div class="soft" id="wMsg">See your name on the screen?</div>
+    <div class="spinner"></div>
+  </div>
+</section>
+
+<section id="qScreen" class="screen hidden">
+  <div class="bar"><span id="qNum">1 of 10</span><span class="tleft" id="tLeft">20</span><span class="pts" id="qScore">0</span></div>
+  <div class="qtxt hidden" id="qTxt"></div>
+  <div class="answers" id="answers"></div>
+</section>
+
+<section id="readyScreen" class="screen bg-pattern hidden">
+  <div class="center"><div class="soft" id="rNum">Question 1</div><h1>Get ready!</h1><div class="spinner"></div></div>
+</section>
+
+<section id="sentScreen" class="screen bg-pattern hidden">
+  <div class="bar"><span class="nm" id="sName"></span><span class="pts" id="sScore">0</span></div>
+  <div class="center">
+    <div class="chosen" id="chosen"></div>
+    <h1 id="sTitle">Answer locked in</h1>
+    <div class="soft">Waiting for the others…</div>
+  </div>
+</section>
+
+<section id="resScreen" class="screen hidden">
+  <div class="bar"><span class="nm" id="rName"></span><span class="pts" id="rScore">0</span></div>
+  <div class="center">
+    <h1 id="resTitle">Correct</h1>
+    <div class="resIcon" id="resIcon">✔</div>
+    <div class="ptsBox" id="resPts">+ 850</div>
+    <div class="soft" id="resStreak"></div>
+    <div class="soft" id="resAns"></div>
+    <div class="rankTxt" id="resRank"></div>
+  </div>
+</section>
+
+<section id="finalScreen" class="screen bg-pattern hidden">
+  <div class="bar"><span class="nm" id="fName"></span><span class="pts" id="fScore">0</span></div>
+  <div class="center">
+    <div class="soft">Your final position</div>
+    <div class="rankBig" id="fRank">1</div>
+    <div class="soft" id="fOf">of 150</div>
+    <div class="ptsBox" id="fPts">0 points</div>
+    <div class="big" id="fCorrect"></div>
+    <div class="soft">Thank you for playing!</div>
+  </div>
+</section>
+
+<section id="msgScreen" class="screen bg-pattern hidden">
+  <div class="center"><h1 id="mTitle">Game over</h1><div class="soft" id="mText"></div>
+    <button class="btn" id="mBtn">Join another game</button></div>
+</section>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/shapes.js"></script>
+<script src="/play.js"></script>
+</body>
+</html>

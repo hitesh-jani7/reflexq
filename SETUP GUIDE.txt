@@ -1,0 +1,138 @@
+=====================================================================
+  ReflexQ  –  live classroom MCQ quiz            SETUP GUIDE
+=====================================================================
+
+ReflexQ runs as a small website. You put it online once (free), then
+every class you open it from a desktop icon. Students scan the QR code
+on the projector with their phone camera and play in the phone's
+browser using mobile data. Nothing needs to be installed on phones.
+
+
+---------------------------------------------------------------------
+PART A.  Put ReflexQ online  (one time only, about 15 minutes, free)
+---------------------------------------------------------------------
+
+1. Create a free GitHub account at  https://github.com  (if you don't
+   already have one).
+
+2. Click the "+" at the top right  >  "New repository".
+   Name it  reflexq , keep the defaults, click "Create repository".
+
+3. On the new repository page click "uploading an existing file".
+   Open this ReflexQ folder in File Explorer, select EVERYTHING inside
+   it (the "public" folder, server.js, package.json and the other
+   files) and drag it onto the GitHub page.
+   If a "node_modules" folder is there, leave it out.
+   Click the green "Commit changes" button.
+
+4. Go to  https://render.com  and click "Get Started".
+   Choose "Sign up with GitHub" and allow access.
+
+5. In Render click "New +"  >  "Web Service", then pick your
+   reflexq repository. Fill in:
+       Name ............. reflexq-aiims   (this becomes your web address)
+       Language ......... Node
+       Build Command .... npm install
+       Start Command .... npm start
+       Instance Type .... Free
+   Click "Deploy Web Service".
+
+6. Wait about 3 minutes until it says "Live". Your address appears at
+   the top, for example:
+       https://reflexq-aiims.onrender.com
+   Open that address followed by /host to check it works:
+       https://reflexq-aiims.onrender.com/host
+
+   Optional – teacher password: in Render open "Environment", add
+   HOST_PASSWORD with a password of your choice, and save. Then only
+   people who know it can create quizzes on your ReflexQ.
+
+
+---------------------------------------------------------------------
+PART B.  Desktop icon
+---------------------------------------------------------------------
+
+Double-click  "Create Desktop Shortcut.bat"  in this folder and paste
+your Render address when asked. A ReflexQ icon appears on the desktop.
+It opens the teacher screen in its own window, like an app.
+(If Windows shows "Windows protected your PC", click "More info" >
+"Run anyway". The script only creates the shortcut.)
+
+
+---------------------------------------------------------------------
+PART C.  Running a quiz in class
+---------------------------------------------------------------------
+
+1. Open ReflexQ about 2 minutes before class.
+   The free server sleeps after 15 minutes of no use, and the first
+   opening takes up to a minute to wake it. Once open it stays awake.
+
+2. Drag your question Excel file onto the screen (or click to choose).
+   Check the list, then click "Create game".
+
+3. Project the screen. Students scan the QR code (or open the address
+   and type the 6-digit PIN), then enter their name and roll number.
+   Click a name to remove a wrong or duplicate entry.
+
+4. Click "Start quiz". Press SPACE or the RIGHT ARROW key to move on:
+      question  ->  answer graph  ->  scoreboard  ->  next question
+   Pressing SPACE during a question stops the timer early.
+   The question ends by itself when everyone has answered.
+
+5. At the end you see the top 3, the % correct for every question
+   (red bars = topics to revisit) and the full class list.
+   Click "Download results (Excel)". The file has 4 sheets:
+      Students           rank, score, correct answers, accuracy
+      Question analysis  % correct and how many chose A/B/C/D
+      Answer sheet       each student's answer to each question
+      Questions          the questions that were used
+
+   Results are also kept in this computer's browser. They are listed
+   under "Results from earlier quizzes" on the start screen, so you can
+   download them again later.
+
+Scoring is like Kahoot: a correct answer earns 500–1000 points,
+more for a faster answer. A wrong answer earns 0.
+
+The tick box "Show question & options on students' phones" is useful
+in a large hall where the back rows can't read the projector. Untick
+it for Kahoot-style coloured shapes only.
+
+
+---------------------------------------------------------------------
+Making question files
+---------------------------------------------------------------------
+
+Use "ReflexQ-Questions-Template.xlsx" (also downloadable from the
+start screen). One question per row:
+    Question | Option A | Option B | Option C | Option D |
+    Correct (A/B/C/D) | Time (seconds) | Image link (optional)
+ - Options C and D can be left empty (for True/False).
+ - Time can be 5–240 seconds. Empty means 20 seconds.
+ - To show a graph, ECG or diagram, click "Add image" next to the
+   question on the ReflexQ screen and pick a picture from your
+   computer. Images appear only on the projector.
+ - The file name becomes the quiz title.
+Question files stay on your computer. You never need to upload them
+to GitHub or Render.
+
+
+---------------------------------------------------------------------
+Good to know
+---------------------------------------------------------------------
+
+ - Free hosting limits: Render may occasionally restart a free
+   server. If that happens during a quiz, the game stops, but every
+   answer up to that point is already saved on your computer and can
+   be downloaded. Render's "Starter" plan (about US$7 a month) removes
+   the sleeping and restarts, if you ever need it.
+ - If a student's network drops, the phone reconnects by itself and
+   keeps the score. A student who changes phone can re-join with the
+   same roll number.
+ - 150 students at once is well within what the free server handles.
+
+ - Backup offline mode: if there is no internet in a room, install
+   Node.js (LTS) from https://nodejs.org , put a Wi-Fi router in the
+   classroom, connect the laptop and phones to it, and double-click
+   "Start ReflexQ offline (same Wi-Fi).bat". Phones on a mobile
+   hotspot or campus Wi-Fi may not be able to reach the laptop.

@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReflexQ – Teacher</title>
+<link rel="icon" href="/icon-192.png">
+<link rel="stylesheet" href="/common.css">
+<style>
+  body { overflow: hidden; }
+  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; color: #fff; gap: 16px; }
+  .topbar .right { display: flex; gap: 10px; align-items: center; }
+  .iconbtn { background: rgba(255,255,255,.18); border: 0; color: #fff; border-radius: 6px; padding: 8px 12px; font-weight: 700; font-size: 14px; }
+
+  /* setup */
+  #setup { overflow: auto; }
+  #setup .wrap { max-width: 980px; width: 100%; margin: 10px auto 40px; padding: 0 20px; display: grid; gap: 18px; }
+  #setup h1 { margin: 0 0 4px; font-size: 26px; }
+  #setup .sub { color: var(--muted); margin: 0 0 18px; font-weight: 500; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .field { display: grid; gap: 6px; font-weight: 700; font-size: 14px; }
+  .field input[type=text], .field input[type=password] { padding: 12px 14px; border: 2px solid #ccc; border-radius: 6px; font-size: 17px; font-weight: 600; width: 100%; }
+  .drop { border: 3px dashed #c6b6e0; border-radius: 10px; padding: 26px; text-align: center; color: var(--muted); font-weight: 600; cursor: pointer; }
+  .drop.over { background: #f4effc; border-color: var(--purple-light); }
+  .drop strong { color: var(--purple); }
+  .toggle { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+  .toggle input { width: 22px; height: 22px; accent-color: var(--purple); }
+  .qlist { display: grid; gap: 8px; max-height: 380px; overflow: auto; padding-right: 4px; }
+  .qitem { display: grid; grid-template-columns: 38px 1fr auto; gap: 12px; align-items: start; padding: 10px 12px; border-radius: 8px; background: var(--paper); }
+  .qitem .n { font-weight: 900; color: var(--purple); font-size: 18px; }
+  .qitem .t { font-weight: 700; }
+  .qitem .o { font-size: 13px; color: var(--muted); margin-top: 4px; font-weight: 500; }
+  .qitem .o b { color: var(--green); }
+  .qitem .tm { font-size: 13px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+  .err { color: var(--bad); font-weight: 700; white-space: pre-line; }
+  .msg { color: var(--green); font-weight: 700; }
+  a.link { color: var(--purple); font-weight: 700; }
+  .history a { display: block; padding: 6px 0; }
+
+  /* lobby */
+  #lobby .main { flex: 1; display: grid; grid-template-columns: 380px 1fr; gap: 28px; padding: 10px 32px 24px; min-height: 0; }
+  .joinbox { background: #fff; border-radius: 10px; padding: 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; box-shadow: 0 6px 0 rgba(0,0,0,.2); align-self: start; }
+  .joinbox img { width: 100%; max-width: 330px; aspect-ratio: 1; image-rendering: pixelated; }
+  .joinbox .lbl { font-weight: 700; color: var(--muted); font-size: 15px; }
+  .joinbox .url { font-weight: 800; font-size: 15px; word-break: break-all; }
+  .joinbox .pin { font-size: 64px; font-weight: 900; letter-spacing: 4px; line-height: 1; }
+  .lobbyright { display: flex; flex-direction: column; min-height: 0; color: #fff; }
+  .lobbyhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .count { background: rgba(0,0,0,.25); padding: 10px 18px; border-radius: 8px; font-size: 22px; font-weight: 900; }
+  .names { flex: 1; overflow: auto; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 10px; }
+  .chip { background: #fff; color: var(--ink); padding: 8px 14px; border-radius: 6px; font-weight: 800; font-size: 17px; cursor: pointer; animation: pop .25s ease-out; }
+  .chip small { color: var(--muted); font-weight: 700; margin-left: 6px; }
+  .chip.off { opacity: .45; }
+  .chip:hover { text-decoration: line-through; }
+  .waiting { font-size: 26px; font-weight: 800; opacity: .8; margin: auto; text-align: center; }
+  @keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  /* question */
+  #question { background: var(--paper); }
+  .qtext { margin: 18px 28px 0; background: #fff; border-radius: 8px; padding: 18px 26px; text-align: center; font-size: clamp(22px, 3.2vw, 44px); font-weight: 800; box-shadow: 0 3px 0 rgba(0,0,0,.08); }
+  .qmid { flex: 1; display: grid; grid-template-columns: 160px 1fr 160px; align-items: center; padding: 10px 28px; min-height: 0; }
+  .timer { width: 120px; height: 120px; border-radius: 50%; background: var(--purple); color: #fff; display: grid; place-items: center; font-size: 52px; font-weight: 900; }
+  .timer.low { background: var(--red); animation: pulse .5s infinite alternate; }
+  @keyframes pulse { to { transform: scale(1.06); } }
+  .qimg { justify-self: center; max-height: 100%; max-width: 100%; min-height: 0; display: flex; align-items: center; justify-content: center; height: 100%; }
+  .qimg img { max-height: 100%; max-width: 100%; object-fit: contain; border-radius: 6px; }
+  .ansCount { justify-self: end; text-align: center; font-weight: 800; color: var(--ink); }
+  .ansCount .big { font-size: 56px; font-weight: 900; line-height: 1; }
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 20px 18px; }
+  .tile { min-height: 96px; border-radius: 6px; color: #fff; display: flex; align-items: center; gap: 18px; padding: 14px 22px; font-size: clamp(18px, 2.2vw, 30px); font-weight: 800; box-shadow: var(--shadow); transition: opacity .3s; }
+  .tile .shape { font-size: 42px; }
+  .tile .mark { margin-left: auto; font-size: 40px; }
+  .tile.dim { opacity: .28; }
+  .qfoot { display: flex; justify-content: space-between; align-items: center; padding: 0 24px 12px; font-weight: 800; color: var(--muted); }
+  .getready { position: absolute; inset: 0; background: var(--purple); color: #fff; display: grid; place-items: center; text-align: center; font-size: 30px; font-weight: 800; z-index: 5; }
+  .getready .n { font-size: 90px; font-weight: 900; }
+
+  /* reveal chart */
+  .chart { display: flex; gap: 26px; align-items: flex-end; justify-content: center; height: 100%; padding: 10px 0; }
+  .bar { width: 110px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+  .bar .val { font-size: 34px; font-weight: 900; display: flex; align-items: center; gap: 8px; color: var(--ink); }
+  .bar .fill { width: 100%; border-radius: 4px 4px 0 0; transition: height .8s cubic-bezier(.2,.8,.2,1); height: 0; min-height: 6px; }
+  .bar .foot { width: 100%; height: 40px; display: grid; place-items: center; border-radius: 0 0 4px 4px; filter: brightness(.85); }
+  .bar .foot .shape { font-size: 26px; }
+  .bar.wrong { opacity: .35; }
+  .summary { text-align: center; font-weight: 900; font-size: 56px; line-height: 1; color: var(--ink); }
+  .summary small { display: block; font-size: 17px; margin-top: 6px; line-height: 1.3; color: var(--muted); font-weight: 700; }
+
+  /* leaderboard + final */
+  .board { flex: 1; overflow: auto; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 10px 24px 24px; }
+  .board h2 { color: #fff; font-size: 40px; font-weight: 900; margin: 0 0 10px; background: #fff; color: var(--ink); padding: 8px 40px; border-radius: 8px; }
+  .lrow { width: min(900px, 100%); background: #fff; border-radius: 6px; display: flex; align-items: center; gap: 18px; padding: 12px 22px; font-size: 26px; font-weight: 800; box-shadow: var(--shadow); animation: slide .4s ease-out both; }
+  .lrow:first-of-type { background: var(--purple-dark); color: #fff; }
+  .lrow .rk { width: 40px; font-weight: 900; }
+  .lrow .roll { font-size: 16px; opacity: .65; font-weight: 700; }
+  .lrow .sc { margin-left: auto; font-weight: 900; }
+  @keyframes slide { from { transform: translateX(-40px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  #final { overflow: auto; }
+  .podium { display: flex; align-items: flex-end; justify-content: center; gap: 14px; margin: 10px auto 0; height: 300px; }
+  .pod { width: 210px; display: flex; flex-direction: column; align-items: center; color: #fff; }
+  .pod .who { font-size: 22px; font-weight: 900; text-align: center; margin-bottom: 8px; }
+  .pod .who small { display: block; font-size: 14px; opacity: .8; font-weight: 700; }
+  .pod .block { width: 100%; background: var(--purple-dark); border-radius: 6px 6px 0 0; display: flex; flex-direction: column; align-items: center; padding-top: 14px; font-weight: 900; animation: rise 1s cubic-bezier(.2,.8,.2,1) both; }
+  .pod .block .medal { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; font-size: 32px; color: #fff; border: 4px solid rgba(255,255,255,.5); }
+  .pod .block .pts { margin-top: 8px; font-size: 20px; }
+  @keyframes rise { from { transform: scaleY(0); transform-origin: bottom; } to { transform: scaleY(1); transform-origin: bottom; } }
+  .stats { max-width: 1100px; width: calc(100% - 40px); margin: 22px auto 40px; display: grid; gap: 18px; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .kpi { background: #fff; border-radius: 10px; padding: 16px; text-align: center; box-shadow: 0 4px 0 rgba(0,0,0,.15); }
+  .kpi .v { font-size: 34px; font-weight: 900; color: var(--purple); }
+  .kpi .l { font-size: 13px; font-weight: 700; color: var(--muted); }
+  .qbars { display: grid; gap: 8px; }
+  .qbar { display: grid; grid-template-columns: 54px 1fr 64px; gap: 12px; align-items: center; font-weight: 800; }
+  .qbar .track { height: 28px; background: #ececf2; border-radius: 4px; overflow: hidden; }
+  .qbar .fillq { height: 100%; border-radius: 4px; transition: width 1s; }
+  .qbar .pct { text-align: right; }
+  .qbar .lab { color: var(--muted); }
+  .legend { font-size: 13px; color: var(--muted); font-weight: 600; }
+  table.full { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.full th, table.full td { padding: 8px 10px; border-bottom: 1px solid #eee; text-align: left; }
+  table.full th { background: var(--paper); position: sticky; top: 0; }
+  table.full td.num, table.full th.num { text-align: right; }
+
+  .nextbtn { font-size: 20px; }
+  .offline { position: fixed; top: 0; left: 50%; transform: translateX(-50%); background: var(--red); color: #fff; padding: 6px 16px; font-weight: 800; border-radius: 0 0 8px 8px; z-index: 99; }
+  @media (max-width: 900px) {
+    #lobby .main { grid-template-columns: 1fr; overflow: auto; }
+    .qmid { grid-template-columns: 100px 1fr 100px; }
+    .timer { width: 80px; height: 80px; font-size: 34px; }
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body class="bg-pattern">
+<div id="offline" class="offline hidden">Connection lost – reconnecting…</div>
+
+<!-- SETUP -->
+<section id="setup" class="screen bg-pattern">
+  <div class="topbar"><span class="logo"><img src="/icon-192.png" alt="">ReflexQ</span>
+    <div class="right"><button class="iconbtn" id="fsBtn1">Full screen</button></div></div>
+  <div class="wrap">
+    <div class="card">
+      <h1>Create a live quiz</h1>
+      <p class="sub">Load your MCQs from the Excel template, then press <b>Create game</b>. Students scan the QR code to join.</p>
+      <div class="row" style="align-items:end">
+        <label class="field" style="flex:1;min-width:260px">Quiz title
+          <input type="text" id="title" placeholder="e.g. Cardiac physiology – Batch 2026" maxlength="120"></label>
+        <label class="field hidden" id="pwField" style="width:220px">Teacher password
+          <input type="password" id="password" autocomplete="current-password"></label>
+      </div>
+      <div style="height:16px"></div>
+      <div class="drop" id="drop">
+        <div style="font-size:20px"><strong>Click to choose</strong> or drag your question Excel file here</div>
+        <div style="margin-top:6px">.xlsx, .xls or .csv &nbsp;·&nbsp; <a class="link" href="/ReflexQ-Questions-Template.xlsx" id="tplLink" download>Download Excel template</a> &nbsp;·&nbsp; <a class="link" href="#" id="sampleLink">Load sample physiology quiz</a></div>
+        <input type="file" id="file" accept=".xlsx,.xls,.csv" class="hidden">
+      </div>
+      <div id="parseMsg" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card" id="previewCard" style="display:none">
+      <div class="row" style="justify-content:space-between;margin-bottom:12px">
+        <h2 style="margin:0;font-size:20px" id="qCountTitle">Questions</h2>
+        <label class="toggle"><input type="checkbox" id="showText" checked> Show question &amp; options on students' phones</label>
+      </div>
+      <div class="qlist" id="qlist"></div>
+      <div class="row" style="justify-content:flex-end;margin-top:18px">
+        <span id="createErr" class="err"></span>
+        <button class="btn green" id="createBtn" style="font-size:22px;padding:14px 34px">Create game</button>
+      </div>
+    </div>
+
+    <div class="card history" id="historyCard" style="display:none">
+      <h2 style="margin:0 0 6px;font-size:18px">Results from earlier quizzes on this computer</h2>
+      <div id="history"></div>
+    </div>
+  </div>
+</section>
+
+<!-- LOBBY -->
+<section id="lobby" class="screen bg-pattern hidden">
+  <div class="topbar"><span class="logo"><img src="/icon-192.png" alt=""><span id="lobbyTitle">ReflexQ</span></span>
+    <div class="right">
+      <label class="toggle" style="color:#fff;font-size:14px"><input type="checkbox" id="showText2"> Text on phones</label>
+      <button class="iconbtn" id="fsBtn2">Full screen</button>
+      <button class="iconbtn" id="cancelBtn">Cancel game</button></div></div>
+  <div class="main">
+    <div class="joinbox">
+      <div class="lbl">Scan to join</div>
+      <img id="qr" alt="QR code to join">
+      <div class="lbl">or open <span class="url" id="joinUrl"></span><br>and enter Game PIN</div>
+      <div class="pin" id="pin">––––––</div>
+    </div>
+    <div class="lobbyright">
+      <div class="lobbyhead">
+        <div class="count"><span id="pcount">0</span> students</div>
+        <button class="btn nextbtn" id="startBtn" disabled>Start quiz ▸</button>
+      </div>
+      <div class="names" id="names"><div class="waiting" id="waitingText">Waiting for students to join…</div></div>
+      <div style="font-size:13px;opacity:.75;margin-top:8px;font-weight:600">Click a name to remove that student.</div>
+    </div>
+  </div>
+</section>
+
+<!-- QUESTION / REVEAL -->
+<section id="question" class="screen hidden">
+  <div class="getready hidden" id="getready"><div><div id="grLabel">Question 1 of 10</div><div class="n" id="grText">Get ready…</div></div></div>
+  <div class="qtext" id="qtext"></div>
+  <div class="qmid">
+    <div><div class="timer" id="timer">20</div></div>
+    <div class="qimg" id="qmid"></div>
+    <div class="ansCount" id="rightBox"><div class="big" id="acount">0</div>Answers</div>
+  </div>
+  <div class="qfoot"><span id="qnum">1 / 10</span><span id="qhint">Space or → to skip the timer</span>
+    <button class="btn dark nextbtn" id="qNext">Skip ▸</button></div>
+  <div class="tiles" id="tiles"></div>
+</section>
+
+<!-- LEADERBOARD -->
+<section id="leader" class="screen bg-pattern hidden">
+  <div class="topbar"><span class="logo"><img src="/icon-192.png" alt="">ReflexQ</span>
+    <div class="right"><span id="lbProgress" style="font-weight:800"></span><button class="btn nextbtn" id="lbNext">Next question ▸</button></div></div>
+  <div class="board" id="board"></div>
+</section>
+
+<!-- FINAL -->
+<section id="final" class="screen bg-pattern hidden">
+  <div class="topbar"><span class="logo"><img src="/icon-192.png" alt=""><span id="finalTitle">ReflexQ</span></span>
+    <div class="right">
+      <button class="btn green" id="dlBtn">Download results (Excel)</button>
+      <button class="btn" id="newBtn">New quiz</button></div></div>
+  <div class="podium" id="podium"></div>
+  <div class="stats">
+    <div class="kpis" id="kpis"></div>
+    <div class="card">
+      <h2 style="margin:0 0 4px;font-size:20px">Correct answers per question</h2>
+      <div class="legend" style="margin-bottom:12px">Bar length = % of students who answered correctly. Green ≥ 70%, yellow 40–69%, red &lt; 40% (topics to revisit).</div>
+      <div class="qbars" id="qbars"></div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:10px">
+        <h2 style="margin:0;font-size:20px">All students</h2>
+        <input type="text" id="search" placeholder="Search name or roll no." style="padding:8px 12px;border:2px solid #ccc;border-radius:6px;font-weight:600">
+      </div>
+      <div style="max-height:460px;overflow:auto"><table class="full" id="fullTable"></table></div>
+    </div>
+  </div>
+</section>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/vendor/xlsx.full.min.js"></script>
+<script src="/shapes.js"></script>
+<script src="/host.js"></script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800;900&display=swap');
+
+:root {
+  --purple: #46178f;
+  --purple-dark: #2b0a5e;
+  --purple-light: #864cbf;
+  --red: #e21b3c;
+  --blue: #1368ce;
+  --yellow: #d89e00;
+  --green: #26890c;
+  --ok: #26890c;
+  --bad: #e21b3c;
+  --ink: #1d1d1f;
+  --muted: #6b6b76;
+  --paper: #f2f2f2;
+  --white: #ffffff;
+  --shadow: 0 4px 0 rgba(0, 0, 0, .25);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: 'Montserrat', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: var(--ink);
+  background: var(--purple);
+  -webkit-tap-highlight-color: transparent;
+}
+button { font-family: inherit; cursor: pointer; }
+input, select { font-family: inherit; }
+.hidden { display: none !important; }
+
+.bg-pattern {
+  background-color: var(--purple);
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(255,255,255,.07) 0 90px, transparent 91px),
+    radial-gradient(circle at 88% 82%, rgba(255,255,255,.06) 0 140px, transparent 141px),
+    linear-gradient(135deg, rgba(255,255,255,.04) 25%, transparent 25%) 0 0 / 60px 60px;
+}
+
+.btn {
+  border: 0; border-radius: 6px; padding: 12px 22px; font-size: 18px; font-weight: 800;
+  background: var(--white); color: var(--ink); box-shadow: var(--shadow); transition: transform .06s;
+}
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.25); }
+.btn.dark { background: #333; color: #fff; }
+.btn.primary { background: var(--purple-dark); color: #fff; }
+.btn.green { background: var(--green); color: #fff; }
+.btn.ghost { background: rgba(255,255,255,.18); color: #fff; box-shadow: none; }
+.btn:disabled { opacity: .5; cursor: default; }
+
+.card {
+  background: var(--white); border-radius: 10px; box-shadow: 0 6px 0 rgba(0,0,0,.18); padding: 24px;
+}
+
+.shape { display: inline-block; width: 1em; height: 1em; flex: none; }
+.c0 { background: var(--red); }
+.c1 { background: var(--blue); }
+.c2 { background: var(--yellow); }
+.c3 { background: var(--green); }
+
+.logo { display: inline-flex; align-items: center; gap: 10px; font-weight: 900; color: #fff; letter-spacing: -.5px; }
+.logo img { width: 40px; height: 40px; border-radius: 9px; }
