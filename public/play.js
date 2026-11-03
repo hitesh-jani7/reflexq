@@ -138,7 +138,8 @@
     scr.className = 'screen ' + (!r.answered ? 'none' : r.correct ? 'ok' : 'bad');
     $('resTitle').textContent = !r.answered ? "Time's up" : r.correct ? 'Correct' : 'Incorrect';
     $('resIcon').textContent = r.correct ? '✔' : '✖';
-    $('resPts').textContent = r.correct ? `+ ${r.points}` : '+ 0';
+    // RQ_SCORING_V1
+    $('resPts').textContent = r.points > 0 ? `+ ${r.points}` : r.points < 0 ? `− ${-r.points}` : '+ 0';
     $('resStreak').textContent = r.correct && r.streak >= 2 ? `Answer streak: ${r.streak}` : '';
     $('resAns').innerHTML = r.correct ? '' : `Correct answer: <b>${L[r.correctOption]}. ${esc(r.correctText)}</b>`;
     $('resRank').textContent = `You are in ${ordinal(r.rank)} place of ${r.players}`;

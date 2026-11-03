@@ -33,6 +33,16 @@
   .qitem .o { font-size: 13px; color: var(--muted); margin-top: 4px; font-weight: 500; }
   .qitem .o b { color: var(--green); }
   .qitem .tm { font-size: 13px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+  /* RQ_SCORING_V1 */
+  .scoring { display: grid; grid-template-columns: 1.3fr 1fr 1.4fr; gap: 16px; background: var(--paper); border-radius: 8px; padding: 14px 16px; margin-bottom: 6px; align-items: start; }
+  .scoring select, .scoring input[type=number] { padding: 9px 10px; border: 2px solid #ccc; border-radius: 6px; font-size: 16px; font-weight: 700; width: 100%; background: #fff; font-family: inherit; }
+  .scoring .negrow { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; margin-top: 6px; }
+  .scoring .negrow input { width: 110px; }
+  .scoring .negrow.off { opacity: .4; }
+  .badge { font-size: 12px; font-weight: 700; color: var(--muted); background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 3px 7px; white-space: nowrap; }
+  .badge b { color: var(--purple); }
+  .badge .neg { color: var(--bad); }
+  @media (max-width: 760px) { .scoring { grid-template-columns: 1fr; } }
   .err { color: var(--bad); font-weight: 700; white-space: pre-line; }
   .msg { color: var(--green); font-weight: 700; }
   a.link { color: var(--purple); font-weight: 700; }
@@ -164,6 +174,20 @@
         <h2 style="margin:0;font-size:20px" id="qCountTitle">Questions</h2>
         <label class="toggle"><input type="checkbox" id="showText" checked> Show question &amp; options on students' phones</label>
       </div>
+      <div class="scoring">
+        <label class="field">Scoring
+          <select id="defMode">
+            <option value="speed">Speed bonus (faster = more points)</option>
+            <option value="fixed">Fixed points</option>
+          </select></label>
+        <label class="field">Points per question
+          <input type="number" id="defPoints" min="0" max="100000" step="50" value="1000"></label>
+        <div class="field">
+          <label class="toggle" style="font-weight:700"><input type="checkbox" id="negOn"> Negative marking</label>
+          <div class="negrow off" id="negRow">Wrong answer loses <input type="number" id="defNeg" min="0" max="100000" step="50" value="250"> points</div>
+        </div>
+      </div>
+      <div class="legend" style="margin-bottom:12px">These apply to every question. A question with its own Points, Scoring or Negative value in the Excel file keeps that value (shown in <b style="color:var(--purple)">purple</b> below). Not answering never loses points.</div>
       <div class="qlist" id="qlist"></div>
       <div class="row" style="justify-content:flex-end;margin-top:18px">
         <span id="createErr" class="err"></span>

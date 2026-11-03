@@ -91,8 +91,21 @@ PART C.  Running a quiz in class
    under "Results from earlier quizzes" on the start screen, so you can
    download them again later.
 
-Scoring is like Kahoot: a correct answer earns 500–1000 points,
-more for a faster answer. A wrong answer earns 0.
+SCORING  (RQ_SCORING_V1)
+Above the question list on the start screen you choose how this quiz
+is scored:
+   Scoring ............ Speed bonus: a correct answer earns between half
+                        and all of the question's points – faster
+                        answers earn more (like Kahoot).
+                        Fixed: every correct answer earns full points.
+   Points per question  e.g. 1000
+   Negative marking ... tick it and type how many points a wrong
+                        answer loses, e.g. 250. Totals can go below 0.
+Not answering never loses points. These settings are remembered for
+the next quiz.
+
+Any question can have its own scoring instead – see the three optional
+columns under "Making question files" below.
 
 The tick box "Show question & options on students' phones" is useful
 in a large hall where the back rows can't read the projector. Untick
@@ -106,7 +119,15 @@ Making question files
 Use "ReflexQ-Questions-Template.xlsx" (also downloadable from the
 start screen). One question per row:
     Question | Option A | Option B | Option C | Option D |
-    Correct (A/B/C/D) | Time (seconds) | Image link (optional)
+    Correct (A/B/C/D) | Time (seconds) | Image link (optional) |
+    Points | Scoring | Negative          (last three optional)
+ - Points: what this question is worth, e.g. 2000.
+ - Scoring: Speed or Fixed.
+ - Negative: points lost for a wrong answer, e.g. 500. Type 0 to give
+   this question no negative marking even when the quiz has it on.
+ - Leave any of these three empty and that question follows the quiz
+   settings on the start screen. Older question files without these
+   columns still work.
  - Options C and D can be left empty (for True/False).
  - Time can be 5–240 seconds. Empty means 20 seconds.
  - To show a graph, ECG or diagram, click "Add image" next to the

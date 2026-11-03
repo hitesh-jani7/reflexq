@@ -62,6 +62,13 @@ function newPin() {
   return pin;
 }
 
+// RQ_SCORING_V1 – points per question, speed or fixed scoring, negative marks
+function wholeNum(v, d) {
+  if (v === null || v === undefined || v === '') return d;
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) ? Math.min(100000, Math.max(0, n)) : d;
+}
+
 function cleanText(s, max) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, max); }
 
 function sanitizeQuestions(list) {
@@ -74,7 +81,10 @@ function sanitizeQuestions(list) {
       options,
       correct: Number(q.correct),
       time: Math.min(240, Math.max(5, Number(q.time) || 20)),
-      image: /^https?:\/\//i.test(q.image || '') || /^data:image\//i.test(q.image || '') ? String(q.image) : ''
+      image: /^https?:\/\//i.test(q.image || '') || /^data:image\//i.test(q.image || '') ? String(q.image) : '',
+      points: wholeNum(q.points, 1000),
+      mode: q.mode === 'fixed' ? 'fixed' : 'speed',
+      neg: wholeNum(q.neg, 0)
     };
   }).filter(q => q.q && q.options.length >= 2 && q.correct >= 0 && q.correct < q.options.length);
 }
@@ -110,7 +120,7 @@ function pushAnswerCount(g) {
 function questionForHost(g) {
   const q = g.questions[g.current];
   return { index: g.current, total: g.questions.length, q: q.q, options: q.options, time: q.time, image: q.image,
-    remainingMs: Math.max(0, g.qEnd - Date.now()) };
+    remainingMs: Math.max(0, g.qEnd - Date.now()), points: q.points, mode: q.mode, neg: q.neg };
 }
 
 function questionForPlayer(g, p) {
@@ -297,13 +307,20 @@ io.on('connection', socket => {
     if (!(choice >= 0 && choice < q.options.length)) return cb({ error: 'Bad choice' });
     const ms = Math.max(0, now - g.qStart);
     const correct = choice === q.correct;
-    // Kahoot-style speed scoring: 1000 for an instant answer, falling to 500 at the buzzer
+    // Speed scoring: full points for an instant answer, falling to half at the buzzer.
+    // Fixed scoring: full points for any correct answer. Wrong answers lose q.neg points.
     let points = 0;
     if (correct) {
-      const frac = Math.min(1, ms / (q.time * 1000));
-      points = Math.round(1000 * (1 - frac / 2));
+      if (q.mode === 'fixed') points = q.points;
+      else {
+        const frac = Math.min(1, ms / (q.time * 1000));
+        points = Math.round(q.points * (1 - frac / 2));
+      }
       p.streak++;
-    } else p.streak = 0;
+    } else {
+      points = -q.neg;
+      p.streak = 0;
+    }
     const a = { choice, correct, ms, points };
     p.answers[g.current] = a;
     p.score += points;

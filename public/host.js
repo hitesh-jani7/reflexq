@@ -60,6 +60,50 @@
     { q: 'A rise in body temperature shifts the oxygen–haemoglobin dissociation curve to the right.', options: ['True', 'False'], correct: 0, time: 15 }
   ];
 
+  // RQ_SCORING_V1 ------------------------------------------- quiz scoring defaults
+  const savedScoring = store.get('rq_scoring', null);
+  if (savedScoring) {
+    $('defMode').value = savedScoring.mode === 'fixed' ? 'fixed' : 'speed';
+    $('defPoints').value = savedScoring.points;
+    $('negOn').checked = !!savedScoring.negOn;
+    $('defNeg').value = savedScoring.neg;
+  }
+  function readScoring() {
+    const pts = Math.round(Number($('defPoints').value));
+    const neg = Math.round(Math.abs(Number($('defNeg').value)));
+    return {
+      mode: $('defMode').value === 'fixed' ? 'fixed' : 'speed',
+      points: Number.isFinite(pts) && pts >= 0 ? Math.min(100000, pts) : 1000,
+      negOn: $('negOn').checked,
+      neg: Number.isFinite(neg) ? Math.min(100000, neg) : 0
+    };
+  }
+  // the scoring a question will actually use: its own Excel values, else the quiz defaults
+  function effScoring(q, s) {
+    s = s || readScoring();
+    return {
+      points: q.points != null ? q.points : s.points,
+      mode: q.mode || s.mode,
+      neg: q.neg != null ? q.neg : (s.negOn ? s.neg : 0)
+    };
+  }
+  function onScoringChange() {
+    $('negRow').classList.toggle('off', !$('negOn').checked);
+    $('defNeg').disabled = !$('negOn').checked;
+    store.set('rq_scoring', readScoring());
+    renderPreview();
+  }
+  for (const id of ['defMode', 'defPoints', 'negOn', 'defNeg']) { $(id).addEventListener('input', onScoringChange); $(id).addEventListener('change', onScoringChange); }
+  $('negRow').classList.toggle('off', !$('negOn').checked);
+  $('defNeg').disabled = !$('negOn').checked;
+
+  function scoringBadge(q) {
+    const e = effScoring(q);
+    const own = k => q[k] != null && q[k] !== '';
+    const part = (k, text, cls) => own(k) ? `<b class="${cls || ''}">${text}</b>` : `<span class="${cls || ''}">${text}</span>`;
+    return `<span class="badge">${part('points', `${e.points} pts`)} · ${part('mode', e.mode === 'fixed' ? 'Fixed' : 'Speed')}${e.neg ? ` · ${part('neg', `−${e.neg} if wrong`, 'neg')}` : (own('neg') ? ` · ${part('neg', 'no negative')}` : '')}</span>`;
+  }
+
   function setQuestions(list, title, msg) {
     questions = list;
     if (title && !$('title').value) $('title').value = title;
@@ -80,6 +124,7 @@
           ${q.image ? `<img src="${esc(q.image)}" style="max-height:70px;margin-top:6px;border-radius:4px">` : ''}</div>
         <div style="display:grid;gap:6px;justify-items:end">
           <span class="tm">${q.time}s</span>
+          ${scoringBadge(q)}
           <a href="#" class="link" style="font-size:13px" data-img="${i}">${q.image ? 'Change image' : 'Add image'}</a>
           ${q.image ? `<a href="#" class="link" style="font-size:13px;color:var(--bad)" data-noimg="${i}">Remove</a>` : ''}
         </div>
@@ -121,8 +166,9 @@
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: false, defval: '' });
     let start = 0;
     for (let i = 0; i < Math.min(10, rows.length); i++) if (/question/i.test(String(rows[i][0] || ''))) { start = i + 1; break; }
-    const out = [], errs = [];
+    const out = [], errs = [], warns = [];
     const cell = (row, k) => String(row[k] == null ? '' : row[k]).trim();
+    const numCell = s => Number(String(s).replace(/[,\s]/g, '').replace(/^[−–]/, '-'));
     for (let r = start; r < rows.length; r++) {
       const row = rows[r] || [];
       if (row.every(c => String(c == null ? '' : c).trim() === '')) continue;
@@ -138,21 +184,40 @@
       else idx = opts.findIndex(o => o.toLowerCase() === c.toLowerCase());
       if (idx < 0 || idx >= opts.length) { errs.push(`Row ${r + 1}: correct answer "${c}" must be A, B, C or D (an option that is filled in).`); continue; }
       const t = parseInt(cell(row, 6), 10);
-      out.push({ q, options: opts, correct: idx, time: t >= 5 && t <= 240 ? t : 20, image: cell(row, 7) });
+      // optional scoring columns: I = Points, J = Scoring (Speed/Fixed), K = Negative marks
+      const pRaw = cell(row, 8), mRaw = cell(row, 9), nRaw = cell(row, 10);
+      let points = null, mode = null, neg = null;
+      if (pRaw) {
+        const v = numCell(pRaw);
+        if (Number.isFinite(v) && v >= 0) points = Math.min(100000, Math.round(v));
+        else warns.push(`Row ${r + 1}: Points "${pRaw}" is not a number – the quiz default will be used.`);
+      }
+      if (mRaw) {
+        if (/^s/i.test(mRaw)) mode = 'speed';
+        else if (/^f/i.test(mRaw)) mode = 'fixed';
+        else warns.push(`Row ${r + 1}: Scoring "${mRaw}" should be Speed or Fixed – the quiz default will be used.`);
+      }
+      if (nRaw) {
+        const v = Math.abs(numCell(nRaw));
+        if (Number.isFinite(v)) neg = Math.min(100000, Math.round(v));
+        else warns.push(`Row ${r + 1}: Negative "${nRaw}" is not a number – the quiz default will be used.`);
+      }
+      out.push({ q, options: opts, correct: idx, time: t >= 5 && t <= 240 ? t : 20, image: cell(row, 7), points, mode, neg });
     }
-    return { out, errs };
+    return { out, errs, warns };
   }
 
   function loadFile(file) {
     const fr = new FileReader();
     fr.onload = () => {
       try {
-        const { out, errs } = parseWorkbook(new Uint8Array(fr.result));
+        const { out, errs, warns } = parseWorkbook(new Uint8Array(fr.result));
         const base = file.name.replace(/\.(xlsx|xls|csv)$/i, '').replace(/[_-]+/g, ' ');
         if (!out.length) { $('parseMsg').innerHTML = `<div class="err">No questions could be read from ${esc(file.name)}.\n${esc(errs.slice(0, 8).join('\n'))}</div>`; return; }
         setQuestions(out, base === 'ReflexQ Questions Template' ? '' : base,
           `<div class="msg">Loaded ${out.length} questions from ${esc(file.name)}.</div>` +
-          (errs.length ? `<div class="err" style="margin-top:6px">${errs.length} row(s) skipped:\n${esc(errs.slice(0, 8).join('\n'))}${errs.length > 8 ? '\n…' : ''}</div>` : ''));
+          (errs.length ? `<div class="err" style="margin-top:6px">${errs.length} row(s) skipped:\n${esc(errs.slice(0, 8).join('\n'))}${errs.length > 8 ? '\n…' : ''}</div>` : '') +
+          (warns.length ? `<div class="err" style="margin-top:6px;color:var(--yellow)">${esc(warns.slice(0, 8).join('\n'))}${warns.length > 8 ? '\n…' : ''}</div>` : ''));
       } catch (e) {
         $('parseMsg').innerHTML = `<div class="err">Could not read that file. Please use the ReflexQ Excel template.</div>`;
       }
@@ -195,7 +260,7 @@
     if (!questions.length) return;
     $('createBtn').disabled = true; $('createErr').textContent = '';
     socket.timeout(15000).emit('host:create', {
-      questions, password: $('password').value,
+      questions: questions.map(q => ({ ...q, ...effScoring(q) })), password: $('password').value,
       settings: { showText: $('showText').checked, title: $('title').value.trim() }
     }, (err, res) => {
       $('createBtn').disabled = false;
@@ -300,7 +365,8 @@
     state = 'question'; current = q.index;
     show('question');
     $('qtext').textContent = q.q;
-    $('qnum').textContent = `${q.index + 1} / ${q.total}`;
+    $('qnum').textContent = `${q.index + 1} / ${q.total}` + (q.points != null
+      ? ` · ${q.mode === 'fixed' ? '' : 'up to '}${q.points} points${q.neg ? ` · wrong answer −${q.neg}` : ''}` : '');
     $('qhint').textContent = 'Press Space or → to stop the timer early';
     $('qNext').textContent = 'Skip ▸';
     $('timer').style.visibility = '';
@@ -415,6 +481,8 @@
       const a = Object.values(s.answers);
       s.score = a.reduce((t, x) => t + (x.points || 0), 0);
       s.correct = a.filter(x => x.correct).length;
+      s.wrong = a.length - s.correct;
+      s.lost = -a.reduce((t, x) => t + Math.min(0, x.points || 0), 0);
       s.attempted = a.length;
       s.time = a.reduce((t, x) => t + (x.ms || 0), 0);
     }
@@ -480,18 +548,19 @@
     const nAsked = askedQ.length;
     const wb = XLSX.utils.book_new();
 
-    const s1 = [['Rank', 'Name', 'Roll No.', 'Score', 'Correct', 'Answered', `Accuracy % (of ${nAsked})`, 'Avg answer time (s)']]
-      .concat(list.map(s => [s.rank, s.name, s.roll, s.score, s.correct, s.attempted, nAsked ? Math.round(s.correct / nAsked * 100) : 0,
+    const s1 = [['Rank', 'Name', 'Roll No.', 'Score', 'Correct', 'Wrong', 'Not answered', 'Points lost (negative)', `Accuracy % (of ${nAsked})`, 'Avg answer time (s)']]
+      .concat(list.map(s => [s.rank, s.name, s.roll, s.score, s.correct, s.wrong, nAsked - s.attempted, s.lost, nAsked ? Math.round(s.correct / nAsked * 100) : 0,
         s.attempted ? +(s.time / s.attempted / 1000).toFixed(1) : '']));
     const ws1 = XLSX.utils.aoa_to_sheet(s1);
-    ws1['!cols'] = [{ wch: 6 }, { wch: 28 }, { wch: 14 }, { wch: 8 }, { wch: 9 }, { wch: 10 }, { wch: 18 }, { wch: 18 }];
+    ws1['!cols'] = [{ wch: 6 }, { wch: 28 }, { wch: 14 }, { wch: 8 }, { wch: 9 }, { wch: 8 }, { wch: 13 }, { wch: 20 }, { wch: 18 }, { wch: 18 }];
     XLSX.utils.book_append_sheet(wb, ws1, 'Students');
 
-    const s2 = [['Q No.', 'Question', 'Correct answer', 'Students', 'Answered', 'Correct', '% correct', 'Avg time (s)', 'Chose A', 'Chose B', 'Chose C', 'Chose D']]
-      .concat(askedQ.map(x => [x.i + 1, x.q.q, `${L[x.q.correct]}. ${x.q.options[x.q.correct]}`, list.length, x.answered, x.correct, x.pct,
+    const pts = q => q.points != null ? q.points : 1000, mode = q => q.mode === 'fixed' ? 'Fixed' : 'Speed', negv = q => q.neg || 0;
+    const s2 = [['Q No.', 'Question', 'Correct answer', 'Points', 'Scoring', 'Negative', 'Students', 'Answered', 'Correct', '% correct', 'Avg time (s)', 'Chose A', 'Chose B', 'Chose C', 'Chose D']]
+      .concat(askedQ.map(x => [x.i + 1, x.q.q, `${L[x.q.correct]}. ${x.q.options[x.q.correct]}`, pts(x.q), mode(x.q), negv(x.q), list.length, x.answered, x.correct, x.pct,
         +(x.avgMs / 1000).toFixed(1), x.counts[0] ?? '', x.counts[1] ?? '', x.counts[2] ?? '', x.counts[3] ?? '']));
     const ws2 = XLSX.utils.aoa_to_sheet(s2);
-    ws2['!cols'] = [{ wch: 6 }, { wch: 60 }, { wch: 28 }, { wch: 9 }, { wch: 9 }, { wch: 8 }, { wch: 9 }, { wch: 11 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 }];
+    ws2['!cols'] = [{ wch: 6 }, { wch: 60 }, { wch: 28 }, { wch: 8 }, { wch: 8 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 8 }, { wch: 9 }, { wch: 11 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 }];
     XLSX.utils.book_append_sheet(wb, ws2, 'Question analysis');
 
     const head = ['Roll No.', 'Name'].concat(askedQ.map(x => `Q${x.i + 1}`), ['Total correct', 'Score']);
@@ -501,10 +570,17 @@
     ws3['!cols'] = [{ wch: 14 }, { wch: 26 }].concat(askedQ.map(() => ({ wch: 6 })), [{ wch: 12 }, { wch: 8 }]);
     XLSX.utils.book_append_sheet(wb, ws3, 'Answer sheet');
 
-    const s4 = [['Q No.', 'Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct', 'Time (s)']]
-      .concat(r.questions.map((q, i) => [i + 1, q.q, q.options[0] || '', q.options[1] || '', q.options[2] || '', q.options[3] || '', L[q.correct], q.time]));
+    const s3b = [['Roll No.', 'Name'].concat(askedQ.map(x => `Q${x.i + 1}`), ['Total score'])].concat(
+      [...list].sort((a, b) => a.roll.localeCompare(b.roll, undefined, { numeric: true })).map(s =>
+        [s.roll, s.name].concat(askedQ.map(x => { const a = s.answers[x.i]; return a ? (a.points || 0) : 0; }), [s.score])));
+    const ws3b = XLSX.utils.aoa_to_sheet(s3b);
+    ws3b['!cols'] = [{ wch: 14 }, { wch: 26 }].concat(askedQ.map(() => ({ wch: 7 })), [{ wch: 11 }]);
+    XLSX.utils.book_append_sheet(wb, ws3b, 'Points per question');
+
+    const s4 = [['Q No.', 'Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct', 'Time (s)', 'Points', 'Scoring', 'Negative']]
+      .concat(r.questions.map((q, i) => [i + 1, q.q, q.options[0] || '', q.options[1] || '', q.options[2] || '', q.options[3] || '', L[q.correct], q.time, pts(q), mode(q), negv(q)]));
     const ws4 = XLSX.utils.aoa_to_sheet(s4);
-    ws4['!cols'] = [{ wch: 6 }, { wch: 60 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 8 }, { wch: 8 }];
+    ws4['!cols'] = [{ wch: 6 }, { wch: 60 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 9 }];
     XLSX.utils.book_append_sheet(wb, ws4, 'Questions');
 
     const d = new Date(r.date);
