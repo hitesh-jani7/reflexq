@@ -87,9 +87,13 @@ PART C.  Running a quiz in class
       Answer sheet       each student's answer to each question
       Questions          the questions that were used
 
-   Results are also kept in this computer's browser. They are listed
-   under "Results from earlier quizzes" on the start screen, so you can
-   download them again later.
+   Results are also kept in this computer's browser (RQ_HISTORY_V1).
+   Click "Previous results" at the top of the start screen to see past
+   quizzes. For each one you can View results (top 3, graphs, class
+   list), Download Excel, or Delete it from this computer.
+
+   The start screen keeps your last question set loaded. Click
+   "Clear questions" to remove it, or just load a new Excel file.
 
 SCORING  (RQ_SCORING_V1)
 Above the question list on the start screen you choose how this quiz

@@ -239,19 +239,61 @@
     $('title').value = last.title || '';
     questions = last.questions;
     renderPreview();
-    $('parseMsg').innerHTML = `<div class="msg">Your last question set is loaded. Choose a new file to replace it.</div>`;
+    $('parseMsg').innerHTML = `<div class="msg">Your last question set is loaded. Keep it, choose a new file to replace it, or click “Clear questions”.</div>`;
   }
 
+  // RQ_HISTORY_V1 ------------------------------------------- clear the loaded questions
+  $('clearQBtn').onclick = () => {
+    if (!confirm('Remove these questions from the screen?\n\nYour Excel file on the computer is not changed, and past results are kept.')) return;
+    questions = [];
+    $('title').value = '';
+    store.del('rq_lastQuiz');
+    renderPreview();
+    $('parseMsg').innerHTML = `<div class="msg">Questions cleared. Choose an Excel file or load the sample quiz.</div>`;
+  };
+
+  // ------------------------------------------------------------ previous results
+  let viewingPast = false;
   function renderHistory() {
     const hist = store.get('rq_history', []).map(p => store.get('rq_rec_' + p, null)).filter(Boolean);
-    $('historyCard').style.display = hist.length ? '' : 'none';
-    $('history').innerHTML = hist.map(r => `<a href="#" class="link" data-pin="${r.pin}">${esc(r.title || 'Untitled quiz')} — ${fmtDate(r.date)} — ${Object.keys(r.roster || {}).length} students · Download Excel</a>`).join('');
+    $('histBtn').classList.toggle('hidden', !hist.length);
+    $('histBtn').textContent = `Previous results (${hist.length})`;
+    if (!hist.length) { $('historyCard').style.display = 'none'; $('histBtn').classList.remove('on'); }
+    $('history').innerHTML = hist.map(r => {
+      const n = Object.keys(r.roster || {}).length;
+      const asked = Object.keys(r.responses || {}).length;
+      return `<div class="hrow">
+        <div><div class="ht">${esc(r.title || 'Untitled quiz')}</div>
+          <div class="hm">${fmtDate(r.date)} · ${n} student${n === 1 ? '' : 's'} · ${r.final ? r.questions.length : asked} of ${r.questions.length} questions${r.final ? '' : ' (stopped early)'}</div></div>
+        <div class="ha">
+          <button class="sbtn view" data-act="view" data-pin="${r.pin}">View results</button>
+          <button class="sbtn dl" data-act="dl" data-pin="${r.pin}">Download Excel</button>
+          <button class="sbtn del" data-act="del" data-pin="${r.pin}" aria-label="Delete">Delete</button>
+        </div></div>`;
+    }).join('');
   }
+  function toggleHistory(open) {
+    const card = $('historyCard');
+    open = open === undefined ? card.style.display === 'none' : open;
+    card.style.display = open ? '' : 'none';
+    $('histBtn').classList.toggle('on', open);
+    if (open) $('setup').scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  $('histBtn').onclick = () => toggleHistory();
+  $('histClose').onclick = () => toggleHistory(false);
   $('history').onclick = e => {
-    const a = e.target.closest('a[data-pin]'); if (!a) return;
-    e.preventDefault();
-    const r = store.get('rq_rec_' + a.dataset.pin, null);
-    if (r) exportExcel(r);
+    const b = e.target.closest('button[data-pin]'); if (!b) return;
+    const pin = b.dataset.pin;
+    const r = store.get('rq_rec_' + pin, null);
+    if (!r) { renderHistory(); return; }
+    if (b.dataset.act === 'dl') exportExcel(r);
+    else if (b.dataset.act === 'view') { rec = r; viewingPast = true; showFinal(); }
+    else if (b.dataset.act === 'del') {
+      if (!confirm(`Delete the results of “${r.title || 'Untitled quiz'}” (${fmtDate(r.date)}) from this computer?\n\nDownload the Excel file first if you want to keep a copy. This cannot be undone.`)) return;
+      store.del('rq_rec_' + pin);
+      store.set('rq_history', store.get('rq_history', []).filter(p => p !== pin));
+      renderHistory();
+    }
   };
   renderHistory();
 
@@ -293,6 +335,7 @@
     endSession();
   };
   function endSession() {
+    viewingPast = false;
     store.del('rq_session'); session = null; state = 'setup';
     clearInterval(tickTimer);
     renderHistory();
@@ -503,7 +546,8 @@
     state = 'ended';
     clearInterval(tickTimer);
     const { list, perQ } = computeResults(rec);
-    $('finalTitle').textContent = rec.title || 'ReflexQ';
+    $('finalTitle').textContent = (rec.title || 'ReflexQ') + (viewingPast ? ` · ${fmtDate(rec.date)}` : '');
+    $('newBtn').textContent = viewingPast ? '◂ Back' : 'New quiz';
     const top = [list[1], list[0], list[2]];
     const heights = [190, 250, 150], medals = ['#9aa3ad', '#d4a017', '#b0703c'], places = [2, 1, 3];
     $('podium').innerHTML = top.map((p, k) => p ? `
@@ -539,7 +583,11 @@
   }
 
   $('dlBtn').onclick = () => exportExcel(rec);
-  $('newBtn').onclick = () => { rec = null; endSession(); };
+  $('newBtn').onclick = () => {
+    const back = viewingPast;
+    rec = null; endSession();
+    if (back) toggleHistory(true);
+  };
 
   // ------------------------------------------------------------ Excel export
   function exportExcel(r) {

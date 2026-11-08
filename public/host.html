@@ -46,7 +46,20 @@
   .err { color: var(--bad); font-weight: 700; white-space: pre-line; }
   .msg { color: var(--green); font-weight: 700; }
   a.link { color: var(--purple); font-weight: 700; }
-  .history a { display: block; padding: 6px 0; }
+  /* RQ_HISTORY_V1 */
+  .hrow { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; padding: 12px 14px; border-radius: 8px; background: var(--paper); }
+  .hrow + .hrow { margin-top: 8px; }
+  .hrow .ht { font-weight: 800; font-size: 16px; }
+  .hrow .hm { font-size: 13px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+  .hrow .ha { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .sbtn { border: 0; border-radius: 6px; padding: 8px 12px; font-size: 14px; font-weight: 800; background: #fff; color: var(--ink); box-shadow: 0 2px 0 rgba(0,0,0,.15); }
+  .sbtn.view { background: var(--purple); color: #fff; }
+  .sbtn.dl { background: var(--green); color: #fff; }
+  .sbtn.del { color: var(--bad); }
+  .clearbtn { border: 2px solid #f0c4cc; background: #fff; color: var(--bad); border-radius: 6px; padding: 6px 12px; font-size: 14px; font-weight: 800; }
+  .clearbtn:hover { background: #fdf0f2; }
+  .iconbtn.on { background: #fff; color: var(--purple); }
+  @media (max-width: 640px) { .hrow { grid-template-columns: 1fr; } .hrow .ha { justify-content: flex-start; } }
 
   /* lobby */
   #lobby .main { flex: 1; display: grid; grid-template-columns: 380px 1fr; gap: 28px; padding: 10px 32px 24px; min-height: 0; }
@@ -149,8 +162,17 @@
 <!-- SETUP -->
 <section id="setup" class="screen bg-pattern">
   <div class="topbar"><span class="logo"><img src="/icon-192.png" alt="">ReflexQ</span>
-    <div class="right"><button class="iconbtn" id="fsBtn1">Full screen</button></div></div>
+    <div class="right"><button class="iconbtn hidden" id="histBtn">Previous results</button><button class="iconbtn" id="fsBtn1">Full screen</button></div></div>
   <div class="wrap">
+    <div class="card history" id="historyCard" style="display:none">
+      <div class="row" style="justify-content:space-between;margin-bottom:12px">
+        <h2 style="margin:0;font-size:20px">Previous results</h2>
+        <button class="sbtn" id="histClose" aria-label="Close">✕ Close</button>
+      </div>
+      <div class="legend" style="margin-bottom:12px">Quizzes run on this computer and browser (up to the last 25).</div>
+      <div id="history"></div>
+    </div>
+
     <div class="card">
       <h1>Create a live quiz</h1>
       <p class="sub">Load your MCQs from the Excel template, then press <b>Create game</b>. Students scan the QR code to join.</p>
@@ -171,7 +193,8 @@
 
     <div class="card" id="previewCard" style="display:none">
       <div class="row" style="justify-content:space-between;margin-bottom:12px">
-        <h2 style="margin:0;font-size:20px" id="qCountTitle">Questions</h2>
+        <div class="row" style="gap:14px"><h2 style="margin:0;font-size:20px" id="qCountTitle">Questions</h2>
+          <button class="clearbtn" id="clearQBtn" title="Remove these questions from the screen">Clear questions</button></div>
         <label class="toggle"><input type="checkbox" id="showText" checked> Show question &amp; options on students' phones</label>
       </div>
       <div class="scoring">
@@ -195,10 +218,6 @@
       </div>
     </div>
 
-    <div class="card history" id="historyCard" style="display:none">
-      <h2 style="margin:0 0 6px;font-size:18px">Results from earlier quizzes on this computer</h2>
-      <div id="history"></div>
-    </div>
   </div>
 </section>
 
