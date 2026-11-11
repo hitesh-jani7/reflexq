@@ -59,6 +59,11 @@
   .clearbtn { border: 2px solid #f0c4cc; background: #fff; color: var(--bad); border-radius: 6px; padding: 6px 12px; font-size: 14px; font-weight: 800; }
   .clearbtn:hover { background: #fdf0f2; }
   .iconbtn.on { background: #fff; color: var(--purple); }
+  /* RQ_MUSIC_V1 */
+  .musicBtn.muted { opacity: .6; text-decoration: line-through; }
+  .mbtn { border: 0; border-radius: 6px; padding: 10px 14px; font-size: 15px; font-weight: 800; background: #e4e0ec; color: var(--ink); }
+  .volwrap { display: inline-flex; align-items: center; gap: 6px; color: #fff; font-weight: 700; font-size: 13px; }
+  .volwrap input { width: 90px; accent-color: #fff; }
   @media (max-width: 640px) { .hrow { grid-template-columns: 1fr; } .hrow .ha { justify-content: flex-start; } }
 
   /* lobby */
@@ -162,7 +167,7 @@
 <!-- SETUP -->
 <section id="setup" class="screen bg-pattern">
   <div class="topbar"><span class="logo"><img src="/icon-192.png" alt="">ReflexQ</span>
-    <div class="right"><button class="iconbtn hidden" id="histBtn">Previous results</button><button class="iconbtn" id="fsBtn1">Full screen</button></div></div>
+    <div class="right"><button class="iconbtn hidden" id="histBtn">Previous results</button><button class="iconbtn musicBtn" title="Music on/off (M key)">♪ Music on</button><label class="volwrap" title="Music volume">Vol <input type="range" id="musicVol" min="0" max="100" step="5"></label><button class="iconbtn" id="fsBtn1">Full screen</button></div></div>
   <div class="wrap">
     <div class="card history" id="historyCard" style="display:none">
       <div class="row" style="justify-content:space-between;margin-bottom:12px">
@@ -226,6 +231,7 @@
   <div class="topbar"><span class="logo"><img src="/icon-192.png" alt=""><span id="lobbyTitle">ReflexQ</span></span>
     <div class="right">
       <label class="toggle" style="color:#fff;font-size:14px"><input type="checkbox" id="showText2"> Text on phones</label>
+      <button class="iconbtn musicBtn" title="Music on/off (M key)">♪ Music on</button>
       <button class="iconbtn" id="fsBtn2">Full screen</button>
       <button class="iconbtn" id="cancelBtn">Cancel game</button></div></div>
   <div class="main">
@@ -256,14 +262,15 @@
     <div class="ansCount" id="rightBox"><div class="big" id="acount">0</div>Answers</div>
   </div>
   <div class="qfoot"><span id="qnum">1 / 10</span><span id="qhint">Space or → to skip the timer</span>
-    <button class="btn dark nextbtn" id="qNext">Skip ▸</button></div>
+    <span class="row" style="gap:10px"><button class="mbtn musicBtn" title="Music on/off (M key)">♪ Music on</button>
+    <button class="btn dark nextbtn" id="qNext">Skip ▸</button></span></div>
   <div class="tiles" id="tiles"></div>
 </section>
 
 <!-- LEADERBOARD -->
 <section id="leader" class="screen bg-pattern hidden">
   <div class="topbar"><span class="logo"><img src="/icon-192.png" alt="">ReflexQ</span>
-    <div class="right"><span id="lbProgress" style="font-weight:800"></span><button class="btn nextbtn" id="lbNext">Next question ▸</button></div></div>
+    <div class="right"><span id="lbProgress" style="font-weight:800"></span><button class="iconbtn musicBtn" title="Music on/off (M key)">♪ Music on</button><button class="btn nextbtn" id="lbNext">Next question ▸</button></div></div>
   <div class="board" id="board"></div>
 </section>
 
@@ -271,6 +278,7 @@
 <section id="final" class="screen bg-pattern hidden">
   <div class="topbar"><span class="logo"><img src="/icon-192.png" alt=""><span id="finalTitle">ReflexQ</span></span>
     <div class="right">
+      <button class="iconbtn musicBtn" title="Music on/off (M key)">♪ Music on</button>
       <button class="btn green" id="dlBtn">Download results (Excel)</button>
       <button class="btn" id="newBtn">New quiz</button></div></div>
   <div class="podium" id="podium"></div>
@@ -294,6 +302,7 @@
 <script src="/socket.io/socket.io.js"></script>
 <script src="/vendor/xlsx.full.min.js"></script>
 <script src="/shapes.js"></script>
+<script src="/music.js"></script>
 <script src="/host.js"></script>
 </body>
 </html>

@@ -95,6 +95,15 @@ PART C.  Running a quiz in class
    The start screen keeps your last question set loaded. Click
    "Clear questions" to remove it, or just load a new Excel file.
 
+MUSIC  (RQ_MUSIC_V1)
+The teacher's screen plays music through the computer's speakers:
+suspense music while a question is on screen (with ticks in the last
+5 seconds), a short sound when the time is up, and upbeat music on the
+scoreboard and the final results. Students' phones stay silent.
+Click "Music on/off" (or press M) to turn it off, and use "Vol" on
+the start screen to set the volume. Both are remembered. All music is
+original and made by ReflexQ itself – no copyright issues.
+
 SCORING  (RQ_SCORING_V1)
 Above the question list on the start screen you choose how this quiz
 is scored:

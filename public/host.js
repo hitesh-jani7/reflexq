@@ -316,8 +316,29 @@
     });
   };
 
+  // RQ_MUSIC_V1 ------------------------------------------------ music controls
+  const MUSIC = window.RQMusic || { play() {}, stop() {}, sting() {}, unlock() {}, enabled: () => false, setEnabled() {}, volume: () => 0, setVolume() {} };
+  function syncMusicBtns() {
+    for (const b of document.querySelectorAll('.musicBtn')) {
+      b.textContent = MUSIC.enabled() ? '♪ Music on' : '♪ Music off';
+      b.classList.toggle('muted', !MUSIC.enabled());
+    }
+  }
+  document.addEventListener('click', e => {
+    MUSIC.unlock();
+    if (e.target.closest('.musicBtn')) { MUSIC.setEnabled(!MUSIC.enabled()); syncMusicBtns(); }
+  });
+  document.addEventListener('keydown', e => {
+    MUSIC.unlock();
+    if ((e.key === 'm' || e.key === 'M') && !e.target.matches('input, textarea, select')) { MUSIC.setEnabled(!MUSIC.enabled()); syncMusicBtns(); }
+  });
+  $('musicVol').value = Math.round(MUSIC.volume() * 100);
+  $('musicVol').oninput = () => MUSIC.setVolume($('musicVol').value / 100);
+  syncMusicBtns();
+
   function enterLobby(players, showText) {
     state = 'lobby';
+    MUSIC.stop();
     $('pin').textContent = session.pin;
     $('qr').src = `/qr/${session.pin}.png`;
     $('joinUrl').textContent = info.base.replace(/^https?:\/\//, '');
@@ -336,6 +357,7 @@
   };
   function endSession() {
     viewingPast = false;
+    MUSIC.stop();
     store.del('rq_session'); session = null; state = 'setup';
     clearInterval(tickTimer);
     renderHistory();
@@ -433,11 +455,13 @@
       if (rem <= 0) clearInterval(tickTimer);
     };
     tick(); tickTimer = setInterval(tick, 200);
+    if (q.remainingMs > 0) MUSIC.play('question', { deadlineMs: end }); else MUSIC.stop();
   }
   socket.on('question', showQuestion);
   socket.on('answerCount', d => { const el = $('acount'); if (el) el.textContent = d.answered; });
 
   socket.on('reveal', d => {
+    if (state === 'question') { MUSIC.stop(); MUSIC.sting('timeup'); }
     state = 'reveal'; current = d.index;
     clearInterval(tickTimer);
     $('timer').textContent = '0'; $('timer').classList.remove('low'); $('timer').style.visibility = 'hidden';
@@ -487,6 +511,7 @@
     $('lbProgress').textContent = `${d.index + 1} of ${d.total} done`;
     $('lbNext').textContent = 'Next question ▸';
     show('leader');
+    MUSIC.play('leader');
   });
   $('lbNext').onclick = () => socket.emit('host:next');
 
@@ -497,6 +522,7 @@
     saveRec();
     store.del('rq_session'); session = null;
     showFinal();
+    MUSIC.play('final');
   });
 
   function computeResults(r) {
